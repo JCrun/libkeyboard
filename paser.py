@@ -12,7 +12,7 @@ class KeyboardGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("LibKeyboard 输入助手")
-        self.root.geometry("600x500")
+        self.root.geometry("600x1200")
         self.root.attributes('-topmost', False)
 
         # 多行文本框
@@ -21,12 +21,15 @@ class KeyboardGUI:
 
         # 延迟滑块
         tk.Label(root, text="输入延迟 (秒):").pack()
+        # 初始值设为1秒
         self.delay_scale = tk.Scale(root, from_=0, to=5, orient=tk.HORIZONTAL, resolution=0.1)
+        self.delay_scale.set(2.0)
         self.delay_scale.pack()
 
         # 间隔滑块
         tk.Label(root, text="字符间隔 (秒):").pack()
         self.interval_scale = tk.Scale(root, from_=0, to=1, orient=tk.HORIZONTAL, resolution=0.01)
+        self.interval_scale.set(0.2)
         self.interval_scale.pack()
 
         # 置顶按钮

@@ -6,7 +6,7 @@
 """
 
 import time
-from .keyboard.linux import KeyBoard
+from libkeyboard.keyboard.linux import KeyBoard
 
 
 def keyboard_group(*args, interval=0.02):
