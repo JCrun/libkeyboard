@@ -32,6 +32,12 @@ MANIFEST
 *.manifest
 *.spec
 
+# nuitka build
+.nuitka/
+*.build
+*.dist
+*.onefile-build
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -137,3 +143,5 @@ cython_debug/
 # IDE
 .idea/
 .vscode/
+examples/gui_assistant.exe
+examples/nuitka-crash-report.xml
