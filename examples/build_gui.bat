@@ -30,6 +30,7 @@ python -m nuitka ^
     --enable-plugin=tk-inter ^
     --windows-console-mode=disable ^
     --lto=yes ^
+    --mingw64 ^
     --windows-icon-from-ico="%ICON_FILE%" ^
     "%SCRIPT_NAME%"
 
