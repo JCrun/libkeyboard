@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libkeyboard"
+version = "0.1.0"
+description = "Cross-platform simulated keyboard input for Windows and Linux"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "baicaimp3" }]
+dependencies = [
+    "python-xlib>=0.16",
+    "pillow>=9.0.0",
+    "pyzbar>=0.1.9",
+    "six",
+]
+
+[tool.setuptools.packages.find]
+include = ["libkeyboard*"]
+
