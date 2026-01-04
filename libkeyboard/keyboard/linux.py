@@ -3,7 +3,7 @@
 """
 @Author: baicaimp3
 @Date: 2024/11/08
-Linux下的模拟键盘的核心方法
+Core methods for simulated keyboard under Linux
 """
 
 import Xlib
@@ -21,15 +21,15 @@ from .keyboard_mapping import keyboardMapping as kmp
 class KeyBoard(Display):
     def __init__(self):
         super().__init__()
-        self.min_keycode      = self.display.info.min_keycode               # 最小键值
-        self.max_keycode      = self.display.info.max_keycode               # 最大键值
-        self.count            = self.max_keycode - self.min_keycode + 1     # 可注册的按键数量
-        self.press_event      = Xlib.display.event.KeyPress                 # 按下键盘的事件
-        self.release_event    = Xlib.display.event.KeyRelease               # 松开键盘的事件
+        self.min_keycode      = self.display.info.min_keycode               # Minimum key code
+        self.max_keycode      = self.display.info.max_keycode               # Maximum key code
+        self.count            = self.max_keycode - self.min_keycode + 1     # Number of keys that can be registered
+        self.press_event      = Xlib.display.event.KeyPress                 # Event for pressing a key
+        self.release_event    = Xlib.display.event.KeyRelease               # Event for releasing a key
         self.ctrl_press       = Xlib.X.KeyPress
         self.ctrl_release     = Xlib.X.KeyRelease
-        self.register_mapping = {}      # {keysym: {keycode: 1, keyidx: 0}} 已注册的键盘映射表
-        self.event_mapping    = {}      # {keysym: {keycode: 1, keyidx: 0, count: 1}} 被按下的次数
+        self.register_mapping = {}      # {keysym: {keycode: 1, keyidx: 0}} Registered keyboard mapping table
+        self.event_mapping    = {}      # {keysym: {keycode: 1, keyidx: 0, count: 1}} Number of times pressed
         self.modifiers        = set()
         self.closed           = False
 
@@ -47,7 +47,7 @@ class KeyBoard(Display):
             pass
 
     def key_to_keysym(self, key):
-        """转文本码keysym"""
+        """Convert to text code keysym"""
         _key = None
         keysym = None
         if key.lower() in ('ps', 'printscreen', 'print screen'):
@@ -73,13 +73,13 @@ class KeyBoard(Display):
             _key = None
 
         elif len(key) != 1:
-            self.pro_raise(Exception("字符长度必须为1"))
+            self.pro_raise(Exception("Character length must be 1"))
         else:
             keysym = self.char_to_keysym(key)
         return _key, keysym
 
     def _update_modifiers(self, key, is_press):
-        """在key是ctrl,shift,alt时做记录"""
+        """Record when key is ctrl, shift, alt"""
         if NORMAL_MODIFIERS.get(key, None):
             if is_press:
                 self.modifiers.add(key)
@@ -91,11 +91,11 @@ class KeyBoard(Display):
 
     def press(self, key, register=False):
         """
-        按下一个按键
-        :param key: 键盘按键
-        :param register: 当没有此按键时, 是否注册按键 出于安全考虑，只有在write()时，才为True
+        Press a key
+        :param key: Keyboard key
+        :param register: Whether to register the key when it does not exist. For security reasons, true only when writing()
         """
-        _key, keysym = self.key_to_keysym(key)      # 获取对应的文本码
+        _key, keysym = self.key_to_keysym(key)      # Get corresponding text code
         if _key is not None:
             self._update_modifiers(_key, True)
 
@@ -103,34 +103,34 @@ class KeyBoard(Display):
             keycode, keyidx = kmp.get(key), 0
             needshift = True if key.isupper() or key in '~!@#$%^&*()_+{}|:"<>?' else False
             if needshift:
-                self._send_event(self.ctrl_press, kmp['shift'])     # 按下shift
+                self._send_event(self.ctrl_press, kmp['shift'])     # Press shift
 
             self._send_event(self.ctrl_press, kmp.get(key))
 
             if needshift:
-                self._send_event(self.ctrl_release, kmp['shift'])   # 松开shift
+                self._send_event(self.ctrl_release, kmp['shift'])   # Release shift
 
         else:
-            keycode, keyidx = self.get_keycode(keysym, register)        # 获取按键码
+            keycode, keyidx = self.get_keycode(keysym, register)        # Get key code
             if keycode is None:
-                self.pro_raise(KeyError(f"没有此按键'{key}'"))
+                self.pro_raise(KeyError(f"No such key '{key}'"))
             event = self.press_event if not _key else self.ctrl_press
-            self._send_event(event, keycode, keyidx)        # 发送键盘事件
+            self._send_event(event, keycode, keyidx)        # Send keyboard event
 
         self.sync()
-        # 记录事件
+        # Record event
         if keysym in self.event_mapping:
             self.event_mapping[keysym]['count'] += 1
         else:
             self.event_mapping[keysym] = {"keycode": keycode, "keyidx": keyidx, "count": 1}
 
     def release(self, key):
-        """松开一个按键"""
+        """Release a key"""
         _key, keysym = self.key_to_keysym(key)
         if _key is not None:
             self._update_modifiers(_key, False)
 
-        if kmp.get(key) is not None:        # 热键
+        if kmp.get(key) is not None:        # Hot key
             keycode = kmp.get(key)
             self._send_event(self.ctrl_release, keycode)
 
@@ -140,7 +140,7 @@ class KeyBoard(Display):
             self._send_event(event, keycode, keyidx)
 
         self.sync()
-        # 清除事件记录
+        # Clear event record
         if keysym in self.event_mapping:
             self.event_mapping[keysym]["count"] -= 1
             if self.event_mapping[keysym]["count"] == 0:
@@ -153,7 +153,7 @@ class KeyBoard(Display):
             Xlib.X.ShiftMask if Key.shift in modifiers else 0)
 
     def reset_keyboard(self):
-        """重置键盘, 松开所有按键"""
+        """Reset keyboard, release all keys"""
         for keysym, data in self.event_mapping.items():
             keycode, keyidx, count = data["keycode"], data["keyidx"], data["count"]
             if count >= 0:
@@ -163,7 +163,7 @@ class KeyBoard(Display):
         self.event_mapping = {}
 
     def _send_event(self, event, keycode, keyidx=0):
-        """发送一个键盘事件"""
+        """Send a keyboard event"""
         with display_manager(self) as dm, self._modifiers as modifiers:
             if isinstance(event, int):
                 Xlib.ext.xtest.fake_input(dm, event, keycode)
@@ -187,24 +187,24 @@ class KeyBoard(Display):
         yield set(NORMAL_MODIFIERS.get(modifier, None) for modifier in self.modifiers)
 
     def get_all_mapping(self):
-        """获取所有的键盘映射"""
+        """Get all keyboard mappings"""
         return self.get_keyboard_mapping(self.min_keycode, self.count)
 
     def get_void_keycode(self):
-        """获取一个没有被注册的键值"""
+        """Get an unregistered key value"""
         for _keycode, _keysym in enumerate(self.get_all_mapping()[128:]):
             if not any(_keysym):
                 keyidx = 0
                 return _keycode + self.min_keycode + 128, keyidx
 
-        # 没有空余的按键, 从已注册的当中去一个没有被按键的按键
+        # No spare keys, take an unpressed key from the registered ones
         for keysym, data in self.register_mapping.items():
             if keysym not in self.event_mapping or self.event_mapping[keysym].get('count', 0) == 0:
                 return data["keycode"], data["keyidx"]
-        self.pro_raise("没有空余的按键")
+        self.pro_raise("No spare keys")
 
     def _update_register_mapping(self, keysym, keycode, keyidx):
-        """修改已注册的按键映射表"""
+        """Modify registered keyboard mapping table"""
         _temp = None
         for _keysym, data in self.register_mapping.items():
             if data["keycode"] == keycode and data["keyidx"] == keyidx:
@@ -216,7 +216,7 @@ class KeyBoard(Display):
         self.register_mapping[keysym] = {"keycode": keycode, "keyidx": keyidx}
 
     def _register(self, keysym, keycode, keyidx):
-        """注册按键 一般在内容是中文时才会调用"""
+        """Register key. Usually called when content is Chinese"""
         mapping = self.get_all_mapping()
         mapping[keycode - self.min_keycode][0] = keysym
         with display_manager(self) as dm:
@@ -227,7 +227,7 @@ class KeyBoard(Display):
         return keycode, keyidx
 
     def get_keycode(self, keysym, register=False):
-        """符号码keysym转按键码keycode"""
+        """Convert symbol code keysym to key code keycode"""
         keycode = self.keysym_to_keycode(keysym)
         if keycode:
             try:
@@ -237,16 +237,16 @@ class KeyBoard(Display):
             except ValueError:
                 return keycode, 0
 
-        if keysym in self.register_mapping:     # 从已注册的里面找此按键
+        if keysym in self.register_mapping:     # Find this key in registered ones
             return self.register_mapping[keysym]['keycode'], self.register_mapping[keysym]['keyidx']
 
-        for keycode, mapping in enumerate(self.get_all_mapping()):      # 从键盘映射里面找此按键
+        for keycode, mapping in enumerate(self.get_all_mapping()):      # Find this key in keyboard mapping
             if mapping[0] == keysym:
                 return keycode + self.min_keycode, 0
             elif mapping[1] == keysym:
                 return keycode + self.min_keycode, 1
 
-        if register:        # 没有找到此按键 注册一下
+        if register:        # Key not found, register it
             keycode, keyidx = self._register(keysym, *self.get_void_keycode())
             return keycode, keyidx
         return None, None
@@ -254,9 +254,9 @@ class KeyBoard(Display):
     @staticmethod
     def char_to_keysym(char):
         """
-        文本对应的文本码
-        :param char: 长度为1的字符
-        :return: 文本码 keysym
+        Text code corresponding to text
+        :param char: Character of length 1
+        :return: text code keysym
         """
         ordinal = ord(char)
         if ordinal < 0x100:
@@ -265,7 +265,7 @@ class KeyBoard(Display):
             return ordinal | 0x01000000
 
     def clear_keycode(self, keycode):
-        """清除一个按键"""
+        """Clear a key"""
         mapping = self.get_all_mapping()
         max_num = len(mapping[keycode - self.min_keycode])
         with display_manager(self) as dm:
@@ -274,7 +274,7 @@ class KeyBoard(Display):
 
     def clear_mapping(self):
         """
-        清除所有注册的按键
+        Clear all registered keys
         """
         if self.register_mapping:
             mapping = self.get_all_mapping()
@@ -289,18 +289,18 @@ class KeyBoard(Display):
                 del self.register_mapping[k]
 
     def pro_raise(self, ex):
-        """抛出异常"""
+        """Raise exception"""
         self.close()
         raise ex
 
     def close(self):
         try:
-            self.reset_keyboard()       # 松开所有按键
+            self.reset_keyboard()       # Release all keys
         except Exception as e:
             pass
 
         try:
-            self.clear_mapping()        # 清除所有注册的按键
+            self.clear_mapping()        # Clear all registered keys
         except Exception as e:
             pass
 

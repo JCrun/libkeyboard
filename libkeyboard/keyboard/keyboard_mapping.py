@@ -10,7 +10,7 @@ import Xlib.XK
 from Xlib.display import Display
 
 
-_display = Display(os.environ['DISPLAY'])
+_display = Display(os.environ.get('DISPLAY', ':0'))
 keyboardMapping = {
     'backspace':         _display.keysym_to_keycode(Xlib.XK.string_to_keysym('BackSpace')),
     '\b':                _display.keysym_to_keycode(Xlib.XK.string_to_keysym('BackSpace')),
